@@ -213,52 +213,112 @@ function flyToStart() {
    5. VEHICLE CREATION
    ============================================================ */
 
-function createVehicle() {
-  try {
-    const position = new Cesium.CallbackProperty(() => {
-      return Cesium.Cartesian3.fromDegrees(
+// Scale factor for the whole flying figure (meters)
+const VEHICLE_SCALE = 1.0;
+
+// Computes a world-space position offset from the vehicle's current
+// location, expressed in the vehicle's own local heading frame.
+// dx = right/left, dy = forward/backward, dz = up/down (matches the
+// Y-forward convention used in updateVehiclePhysics).
+function localOffsetPosition(dx, dy, dz) {
+  return new Cesium.CallbackProperty(() => {
+    const origin = Cesium.Cartesian3.fromDegrees(
+      vehicleState.longitude,
+      vehicleState.latitude,
+      vehicleState.height
+    );
+    const transform = Cesium.Transforms.headingPitchRollToFixedFrame(
+      origin,
+      new Cesium.HeadingPitchRoll(vehicleState.heading, 0, 0)
+    );
+    const local = new Cesium.Cartesian3(dx * VEHICLE_SCALE, dy * VEHICLE_SCALE, dz * VEHICLE_SCALE);
+    return Cesium.Matrix4.multiplyByPoint(transform, local, new Cesium.Cartesian3());
+  }, false);
+}
+
+function vehicleOrientationProperty() {
+  return new Cesium.CallbackProperty(() => {
+    return Cesium.Transforms.headingPitchRollQuaternion(
+      Cesium.Cartesian3.fromDegrees(
         vehicleState.longitude,
         vehicleState.latitude,
         vehicleState.height
-      );
-    }, false);
+      ),
+      new Cesium.HeadingPitchRoll(vehicleState.heading, 0, 0)
+    );
+  }, false);
+}
 
-    const orientation = new Cesium.CallbackProperty(() => {
-      return Cesium.Transforms.headingPitchRollQuaternion(
-        Cesium.Cartesian3.fromDegrees(
-          vehicleState.longitude,
-          vehicleState.latitude,
-          vehicleState.height
-        ),
-        new Cesium.HeadingPitchRoll(vehicleState.heading, 0, 0)
-      );
-    }, false);
+function createVehicle() {
+  try {
+    const orientation = vehicleOrientationProperty();
+    const skinColor = Cesium.Color.fromCssColorString("#ffcf9e");
+    const suitColor = Cesium.Color.fromCssColorString("#2a6bd6");
+    const suitDark = Cesium.Color.fromCssColorString("#12356b");
+    const capeColor = Cesium.Color.fromCssColorString("#c81e1e");
 
-    vehicleEntity = viewer.entities.add({
-      position: position,
+    // Torso
+    viewer.entities.add({
+      position: localOffsetPosition(0, 0, 0),
       orientation: orientation,
-      ellipsoid: {
-        radii: new Cesium.Cartesian3(6, 6, 3),
-        material: Cesium.Color.CYAN.withAlpha(0.85),
+      box: {
+        dimensions: new Cesium.Cartesian3(1.6, 3.0, 1.4),
+        material: suitColor.withAlpha(0.95),
         outline: true,
-        outlineColor: Cesium.Color.WHITE
-      },
-      // A glowing "core" point to sell the explorer-vehicle look
-      point: {
-        pixelSize: 14,
-        color: Cesium.Color.CYAN.withAlpha(0.9),
-        outlineColor: Cesium.Color.WHITE,
-        outlineWidth: 2,
-        heightReference: Cesium.HeightReference.NONE
+        outlineColor: Cesium.Color.WHITE.withAlpha(0.6)
       }
     });
 
-    // Simple glow trail using a second, larger translucent point
+    // Head
     viewer.entities.add({
-      position: position,
+      position: localOffsetPosition(0, 1.9, 0.5),
+      orientation: orientation,
+      ellipsoid: {
+        radii: new Cesium.Cartesian3(0.6, 0.6, 0.6),
+        material: skinColor
+      }
+    });
+
+    // Arms — stretched forward, classic "flying" pose
+    [-1.15, 1.15].forEach((side) => {
+      viewer.entities.add({
+        position: localOffsetPosition(side, 2.3, 0),
+        orientation: orientation,
+        box: {
+          dimensions: new Cesium.Cartesian3(0.5, 2.1, 0.5),
+          material: suitColor
+        }
+      });
+    });
+
+    // Legs — trailing back and slightly down
+    [-0.5, 0.5].forEach((side) => {
+      viewer.entities.add({
+        position: localOffsetPosition(side, -2.3, -0.3),
+        orientation: orientation,
+        box: {
+          dimensions: new Cesium.Cartesian3(0.6, 2.4, 0.6),
+          material: suitDark
+        }
+      });
+    });
+
+    // Cape — trailing flat panel behind the torso
+    viewer.entities.add({
+      position: localOffsetPosition(0, -1.6, 0.3),
+      orientation: orientation,
+      box: {
+        dimensions: new Cesium.Cartesian3(1.8, 2.8, 0.12),
+        material: capeColor.withAlpha(0.9)
+      }
+    });
+
+    // Soft glowing aura around the figure (sells the "super-powered flight" feel)
+    vehicleEntity = viewer.entities.add({
+      position: localOffsetPosition(0, 0, 0),
       point: {
-        pixelSize: 30,
-        color: Cesium.Color.CYAN.withAlpha(0.25)
+        pixelSize: 46,
+        color: Cesium.Color.CYAN.withAlpha(0.18)
       }
     });
   } catch (err) {
