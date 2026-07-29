@@ -1,0 +1,454 @@
+/* ============================================================
+   EarthVerse — style.css
+   Chapter One: Bahrain
+   ============================================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+  background: #000;
+  color: #eaf6ff;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ============================================================
+   LOADING / START SCREEN
+   ============================================================ */
+#loadingScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.loading-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center, rgba(0,60,90,0.55) 0%, rgba(0,10,20,0.95) 70%),
+    linear-gradient(135deg, #001018 0%, #00202e 50%, #001018 100%);
+  animation: bgPulse 6s ease-in-out infinite alternate;
+}
+
+@keyframes bgPulse {
+  from { filter: brightness(0.9); }
+  to   { filter: brightness(1.15); }
+}
+
+.loading-content {
+  position: relative;
+  z-index: 1;
+  padding: 20px;
+  max-width: 90vw;
+}
+
+.ev-logo {
+  font-size: clamp(2.2rem, 8vw, 4.5rem);
+  letter-spacing: 0.12em;
+  margin: 0;
+  font-weight: 800;
+  color: #eaf6ff;
+  text-shadow: 0 0 20px rgba(0, 200, 255, 0.6), 0 0 60px rgba(0, 150, 255, 0.3);
+}
+
+.ev-logo-accent {
+  color: #35d0ff;
+}
+
+.ev-subtitle {
+  margin-top: 10px;
+  font-size: clamp(0.9rem, 3vw, 1.3rem);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #7fd8ff;
+  opacity: 0.9;
+}
+
+.loading-status {
+  margin-top: 30px;
+  font-size: 0.95rem;
+  color: #9fd6ea;
+  min-height: 1.3em;
+}
+
+.token-error {
+  margin-top: 20px;
+  padding: 14px 18px;
+  border: 1px solid rgba(255, 90, 90, 0.5);
+  background: rgba(255, 60, 60, 0.12);
+  border-radius: 8px;
+  color: #ffb3b3;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.token-error code {
+  background: rgba(255,255,255,0.08);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.token-error a {
+  color: #7fd8ff;
+}
+
+.start-button {
+  margin-top: 34px;
+  padding: 14px 42px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: #001018;
+  background: linear-gradient(135deg, #35d0ff, #0090c9);
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  box-shadow: 0 0 25px rgba(53, 208, 255, 0.5);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.start-button:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 0 35px rgba(53, 208, 255, 0.75);
+}
+
+.start-button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.loading-footnote {
+  margin-top: 40px;
+  font-size: 0.7rem;
+  color: #567;
+  letter-spacing: 0.03em;
+}
+
+/* ============================================================
+   CESIUM CONTAINER
+   ============================================================ */
+#cesiumContainer {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Keep Cesium's own credit/attribution visible but unobtrusive */
+.cesium-viewer-bottom {
+  z-index: 20;
+}
+
+/* ============================================================
+   HUD — general panel styling
+   ============================================================ */
+#hud {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none; /* children re-enable as needed */
+}
+
+.hud-panel {
+  position: absolute;
+  pointer-events: auto;
+  background: rgba(0, 20, 30, 0.55);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(53, 208, 255, 0.25);
+  border-radius: 10px;
+  padding: 8px 14px;
+  color: #eaf6ff;
+  font-size: 0.85rem;
+}
+
+#topBar {
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+#compassPanel {
+  top: 16px;
+  right: 16px;
+  padding: 6px;
+}
+
+#compass {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid rgba(53, 208, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.compass-n {
+  position: absolute;
+  top: 3px;
+  font-size: 0.65rem;
+  color: #35d0ff;
+  font-weight: 700;
+}
+
+#compassNeedle {
+  width: 3px;
+  height: 22px;
+  background: linear-gradient(to bottom, #ff5050 50%, #eaf6ff 50%);
+  border-radius: 2px;
+  transform-origin: center 60%;
+  transition: transform 0.1s linear;
+}
+
+#statsPanel {
+  top: 84px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+}
+
+#controlButtons {
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+#controlButtons button {
+  pointer-events: auto;
+  background: rgba(0, 20, 30, 0.65);
+  border: 1px solid rgba(53, 208, 255, 0.35);
+  color: #eaf6ff;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+#controlButtons button:hover {
+  background: rgba(53, 208, 255, 0.25);
+}
+
+/* ============================================================
+   DISCOVERY TOAST
+   ============================================================ */
+.discovery-toast {
+  position: absolute;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 30, 20, 0.85);
+  border: 1px solid rgba(80, 255, 160, 0.5);
+  border-radius: 10px;
+  padding: 12px 24px;
+  text-align: center;
+  pointer-events: none;
+  animation: toastPop 0.35s ease-out;
+}
+
+@keyframes toastPop {
+  from { opacity: 0; transform: translate(-50%, -10px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.toast-title {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7fffb0;
+}
+
+.toast-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* ============================================================
+   OVERLAYS (pause / settings / completion)
+   ============================================================ */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 8, 14, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.overlay-box {
+  background: rgba(0, 25, 35, 0.9);
+  border: 1px solid rgba(53, 208, 255, 0.35);
+  border-radius: 14px;
+  padding: 30px 36px;
+  text-align: center;
+  max-width: 420px;
+  width: 90%;
+}
+
+.overlay-box h2 {
+  margin-top: 0;
+  color: #35d0ff;
+}
+
+.overlay-box button {
+  margin-top: 18px;
+  padding: 12px 30px;
+  background: linear-gradient(135deg, #35d0ff, #0090c9);
+  border: none;
+  border-radius: 24px;
+  color: #001018;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.settings-box {
+  text-align: left;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 14px 0;
+  font-size: 0.9rem;
+}
+
+.settings-row input[type="range"] {
+  width: 55%;
+}
+
+/* ============================================================
+   MOBILE TOUCH CONTROLS
+   ============================================================ */
+#mobileControls {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+#mobileMoveArea {
+  position: absolute;
+  bottom: 90px;
+  left: 20px;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.mobile-row {
+  display: flex;
+  gap: 6px;
+}
+
+.mobile-btn {
+  width: 54px;
+  height: 54px;
+  border-radius: 12px;
+  background: rgba(0, 20, 30, 0.6);
+  border: 1px solid rgba(53, 208, 255, 0.4);
+  color: #eaf6ff;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+
+#mobileAltArea {
+  position: absolute;
+  bottom: 90px;
+  right: 20px;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.boost-btn {
+  position: absolute;
+  bottom: 220px;
+  right: 20px;
+  pointer-events: auto;
+  width: auto;
+  padding: 0 16px;
+  border-radius: 24px;
+  font-size: 0.85rem;
+}
+
+/* ============================================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================================ */
+@media (max-width: 768px) {
+  .hud-panel {
+    font-size: 0.75rem;
+    padding: 6px 10px;
+  }
+
+  #statsPanel {
+    top: 74px;
+    right: 10px;
+    min-width: 110px;
+  }
+
+  #compassPanel {
+    top: 10px;
+    right: 10px;
+  }
+
+  #compass {
+    width: 44px;
+    height: 44px;
+  }
+
+  #controlButtons {
+    bottom: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 92vw;
+  }
+
+  #controlButtons button {
+    padding: 8px 10px;
+    font-size: 0.7rem;
+  }
+
+  .overlay-box {
+    padding: 22px 20px;
+  }
+}
+
+/* Show mobile controls only on touch/small-screen devices via JS toggle */
