@@ -26,7 +26,7 @@
 // public repo long-term without understanding that browser tokens are
 // visible to anyone who views page source — use a token scoped to only
 // the assets this app needs (world terrain + Bing/OSM imagery).
-const CESIUM_ION_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI5MDRiODFiYS0zODg5LTQyZjYtYTJmMS1lYWFjYmNkNmQ4ODkiLCJpZCI6NDYxNTc0LCJzdWIiOiJzaGFkb3c5OTk1IiwiaXNzIjoiaHR0cHM6Ly9hcGkuY2VzaXVtLmNvbSIsImF1ZCI6IkJhaHJhaW4gRXhwbG9yZXIgM0QiLCJpYXQiOjE3ODUzMjEwNTR9.qkKDf62PJZhMzks6yG6789bcKpr0E9sjqadp8CBnspw";
+const CESIUM_ION_TOKEN = "PASTE_YOUR_CESIUM_TOKEN_HERE";
 
 const START_POSITION = {
   longitude: 50.5876,
@@ -294,7 +294,7 @@ function createVehicle() {
       position: droneOffsetPosition(0, 0, 0),
       orientation: orientation,
       ellipsoid: {
-        radii: new Cesium.Cartesian3(1.1, 2.0, 0.75),
+        radii: new Cesium.Cartesian3(1.1 * VEHICLE_SCALE, 2.0 * VEHICLE_SCALE, 0.75 * VEHICLE_SCALE),
         material: hullBlue.withAlpha(0.96),
         outline: true,
         outlineColor: goldBright.withAlpha(0.8)
@@ -306,9 +306,9 @@ function createVehicle() {
       position: droneOffsetPosition(0, 1.0, 0),
       orientation: orientation,
       cylinder: {
-        length: 0.25,
-        topRadius: 1.05,
-        bottomRadius: 1.05,
+        length: 0.25 * VEHICLE_SCALE,
+        topRadius: 1.05 * VEHICLE_SCALE,
+        bottomRadius: 1.05 * VEHICLE_SCALE,
         material: gold.withAlpha(0.9)
       }
     });
@@ -319,7 +319,7 @@ function createVehicle() {
         position: droneOffsetPosition(side * 1.9, -0.2, 0),
         orientation: orientation,
         box: {
-          dimensions: new Cesium.Cartesian3(2.4, 0.9, 0.12),
+          dimensions: new Cesium.Cartesian3(2.4 * VEHICLE_SCALE, 0.9 * VEHICLE_SCALE, 0.12 * VEHICLE_SCALE),
           material: hullBlueDark.withAlpha(0.95),
           outline: true,
           outlineColor: goldBright.withAlpha(0.7)
@@ -331,7 +331,7 @@ function createVehicle() {
         position: droneOffsetPosition(side * 3.0, -0.5, 0),
         orientation: orientation,
         box: {
-          dimensions: new Cesium.Cartesian3(0.3, 0.6, 0.14),
+          dimensions: new Cesium.Cartesian3(0.3 * VEHICLE_SCALE, 0.6 * VEHICLE_SCALE, 0.14 * VEHICLE_SCALE),
           material: gold
         }
       });
@@ -376,11 +376,11 @@ function createVehicle() {
       ellipse: {
         semiMinorAxis: new Cesium.CallbackProperty(() => {
           const altitudeFactor = Cesium.Math.clamp(vehicleState.height / 200, 0.3, 1.4);
-          return 2.2 / altitudeFactor;
+          return (2.2 * VEHICLE_SCALE) / altitudeFactor;
         }, false),
         semiMajorAxis: new Cesium.CallbackProperty(() => {
           const altitudeFactor = Cesium.Math.clamp(vehicleState.height / 200, 0.3, 1.4);
-          return 3.6 / altitudeFactor;
+          return (3.6 * VEHICLE_SCALE) / altitudeFactor;
         }, false),
         material: Cesium.Color.BLACK.withAlpha(0.35),
         heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
