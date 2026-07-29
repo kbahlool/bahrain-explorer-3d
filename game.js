@@ -26,7 +26,7 @@
 // public repo long-term without understanding that browser tokens are
 // visible to anyone who views page source — use a token scoped to only
 // the assets this app needs (world terrain + Bing/OSM imagery).
-const CESIUM_ION_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI5MDRiODFiYS0zODg5LTQyZjYtYTJmMS1lYWFjYmNkNmQ4ODkiLCJpZCI6NDYxNTc0LCJzdWIiOiJzaGFkb3c5OTk1IiwiaXNzIjoiaHR0cHM6Ly9hcGkuY2VzaXVtLmNvbSIsImF1ZCI6IkJhaHJhaW4gRXhwbG9yZXIgM0QiLCJpYXQiOjE3ODUzMjEwNTR9.qkKDf62PJZhMzks6yG6789bcKpr0E9sjqadp8CBnspw";
+const CESIUM_ION_TOKEN = "PASTE_YOUR_CESIUM_TOKEN_HERE";
 
 const START_POSITION = {
   longitude: 50.5876,
@@ -240,7 +240,7 @@ function flyToStart() {
 
 // Scale factor for the whole flying figure (meters). Bumped up significantly —
 // at typical follow-camera distance a scale of 1.0 was nearly invisible.
-const VEHICLE_SCALE = 6.0;
+const VEHICLE_SCALE = 1.6;
 
 // Computes a world-space position offset from the vehicle's current
 // location, expressed in the vehicle's own local heading frame.
