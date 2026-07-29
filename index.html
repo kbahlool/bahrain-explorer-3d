@@ -56,40 +56,102 @@
 
   <!-- ============================================================
        HUD (heads-up display) — hidden until "Start Exploring"
+       Premium AAA-style layout: top-left status, top-right nav,
+       bottom-left radar, bottom-center energy, bottom-right missions.
        ============================================================ -->
   <div id="hud" class="hidden">
 
-    <!-- Top bar: discovery progress -->
-    <div id="topBar" class="hud-panel">
-      <div id="discoveryCounter">Locations Discovered: 0/3</div>
-    </div>
-
-    <!-- Compass -->
-    <div id="compassPanel" class="hud-panel">
-      <div id="compass">
-        <div id="compassNeedle"></div>
-        <span class="compass-n">N</span>
+    <!-- TOP LEFT — Identity, Level, XP, Current Mission -->
+    <div id="topLeftPanel" class="hud-panel hud-panel-glass">
+      <div id="hudBrand">EARTH<span class="hud-brand-accent">VERSE</span></div>
+      <div id="explorerLevelRow">
+        <span id="explorerLevelLabel">Explorer Lv. <span id="explorerLevelValue">1</span></span>
+      </div>
+      <div id="xpBarTrack">
+        <div id="xpBarFill"></div>
+      </div>
+      <div id="xpValueLabel"><span id="xpCurrentValue">0</span> / <span id="xpNextValue">1000</span> XP</div>
+      <div id="currentMissionRow">
+        <span class="mission-label">Mission:</span>
+        <span id="currentMissionText">Explore Manama</span>
       </div>
     </div>
 
-    <!-- Speed / Altitude indicators -->
-    <div id="statsPanel" class="hud-panel">
-      <div>Speed: <span id="speedValue">0</span> km/h</div>
-      <div>Altitude: <span id="altitudeValue">0</span> m</div>
+    <!-- Legacy discovery counter kept for compatibility with existing logic,
+         visually folded into the mission tracker instead of shown standalone -->
+    <div id="topBar" class="hud-panel hidden">
+      <div id="discoveryCounter">Locations Discovered: 0/3</div>
     </div>
 
-    <!-- Buttons: reset / pause / settings / day-night -->
-    <div id="controlButtons" class="hud-panel">
-      <button id="resetButton" title="Reset Position">⟲ Reset</button>
-      <button id="pauseButton" title="Pause">⏸ Pause</button>
-      <button id="dayNightButton" title="Toggle Day/Night">☀ Day</button>
-      <button id="settingsButton" title="Settings">⚙ Settings</button>
+    <!-- TOP RIGHT — Compass, Speed, Altitude -->
+    <div id="topRightPanel" class="hud-panel hud-panel-glass">
+      <div id="compassPanel">
+        <div id="compass">
+          <div id="compassNeedle"></div>
+          <span class="compass-n">N</span>
+        </div>
+      </div>
+      <div id="statsPanel">
+        <div class="stat-row"><span class="stat-label">Speed</span><span id="speedValue">0</span><span class="stat-unit">km/h</span></div>
+        <div class="stat-row"><span class="stat-label">Altitude</span><span id="altitudeValue">0</span><span class="stat-unit">m</span></div>
+      </div>
+    </div>
+
+    <!-- BOTTOM LEFT — Mini Radar -->
+    <div id="bottomLeftPanel" class="hud-panel hud-panel-glass">
+      <div id="radarLabel">Radar</div>
+      <div id="radarContainer">
+        <svg id="radarSvg" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="58" class="radar-ring-outer" />
+          <circle cx="60" cy="60" r="38" class="radar-ring-mid" />
+          <circle cx="60" cy="60" r="18" class="radar-ring-inner" />
+          <line x1="60" y1="2" x2="60" y2="118" class="radar-crosshair" />
+          <line x1="2" y1="60" x2="118" y2="60" class="radar-crosshair" />
+          <circle cx="60" cy="60" r="4" class="radar-player-dot" />
+          <g id="radarBlips"></g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- BOTTOM CENTER — Drone Energy, Boost Energy, core controls -->
+    <div id="bottomCenterPanel" class="hud-panel hud-panel-glass">
+      <div class="energy-row">
+        <span class="energy-label">Drone Energy</span>
+        <div class="energy-track"><div id="droneEnergyFill" class="energy-fill drone-energy-fill"></div></div>
+      </div>
+      <div class="energy-row">
+        <span class="energy-label">Boost Energy</span>
+        <div class="energy-track"><div id="boostEnergyFill" class="energy-fill boost-energy-fill"></div></div>
+      </div>
+
+      <div id="controlButtons">
+        <button id="resetButton" title="Reset Position">⟲ Reset</button>
+        <button id="pauseButton" title="Pause">⏸ Pause</button>
+        <button id="dayNightButton" title="Toggle Day/Night">☀ Day</button>
+        <button id="settingsButton" title="Settings">⚙ Settings</button>
+      </div>
+    </div>
+
+    <!-- BOTTOM RIGHT — Mission Tracker -->
+    <div id="bottomRightPanel" class="hud-panel hud-panel-glass">
+      <div id="missionTrackerLabel">Mission Tracker</div>
+      <ul id="missionTrackerList"><!-- populated by game.js --></ul>
     </div>
 
     <!-- Discovery notification (toast) -->
     <div id="discoveryToast" class="discovery-toast hidden">
       <div class="toast-title">Location Discovered!</div>
       <div id="toastLocationName" class="toast-name"></div>
+    </div>
+
+    <!-- Mission complete cinematic popup -->
+    <div id="missionCompletePopup" class="overlay hidden">
+      <div class="overlay-box mission-complete-box">
+        <div class="mission-complete-title">MISSION COMPLETE</div>
+        <div id="missionCompleteName" class="mission-complete-name">The Lost Pearl</div>
+        <div id="missionCompleteXP" class="mission-complete-xp">+250 XP</div>
+        <div id="missionCompleteReward" class="mission-complete-reward">Pearl Fragment Collected</div>
+      </div>
     </div>
 
     <!-- Pause overlay -->

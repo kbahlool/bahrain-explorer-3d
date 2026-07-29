@@ -26,7 +26,7 @@
 // public repo long-term without understanding that browser tokens are
 // visible to anyone who views page source — use a token scoped to only
 // the assets this app needs (world terrain + Bing/OSM imagery).
-const CESIUM_ION_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI5MDRiODFiYS0zODg5LTQyZjYtYTJmMS1lYWFjYmNkNmQ4ODkiLCJpZCI6NDYxNTc0LCJzdWIiOiJzaGFkb3c5OTk1IiwiaXNzIjoiaHR0cHM6Ly9hcGkuY2VzaXVtLmNvbSIsImF1ZCI6IkJhaHJhaW4gRXhwbG9yZXIgM0QiLCJpYXQiOjE3ODUzMjEwNTR9.qkKDf62PJZhMzks6yG6789bcKpr0E9sjqadp8CBnspw";
+const CESIUM_ION_TOKEN = "PASTE_YOUR_CESIUM_TOKEN_HERE";
 
 const START_POSITION = {
   longitude: 50.5876,
@@ -116,8 +116,20 @@ const gameState = {
     interface: true,
     sensitivity: 5,
     moveSpeed: 5
-  }
+  },
+  // --- Version 2: progression + energy ---
+  level: 1,
+  xp: 0,
+  xpToNextLevel: 1000,
+  currentMissionText: "Explore Manama",
+  droneEnergy: 100,   // 0-100, general "battery" — dips with use, regens when idle
+  boostEnergy: 100    // 0-100, drains while boosting, regens otherwise
 };
+
+const BOOST_ENERGY_DRAIN_RATE = 28;  // per second while boosting
+const BOOST_ENERGY_REGEN_RATE = 14;  // per second while not boosting
+const DRONE_ENERGY_DRAIN_RATE = 3;   // per second while moving
+const DRONE_ENERGY_REGEN_RATE = 8;   // per second while idle
 
 let lastFrameTime = null;
 let animationFrameId = null;
@@ -541,7 +553,8 @@ function updateVehiclePhysics(deltaSeconds) {
   const turnRate = Cesium.Math.toRadians(BASE_TURN_RATE * sensitivityFactor);
   let moveSpeed = BASE_MOVE_SPEED * speedFactor;
 
-  if (inputState.boost) {
+  const boostAvailable = inputState.boost && gameState.boostEnergy > 0;
+  if (boostAvailable) {
     moveSpeed *= BOOST_MULTIPLIER;
   }
 
@@ -623,7 +636,7 @@ function updateVehiclePhysics(deltaSeconds) {
   // Display speed (km/h) — based on eased throttle, not raw input
   const instSpeed = Math.abs(moveDistance) / Math.max(deltaSeconds, 0.0001); // m/s
   vehicleState.speed = instSpeed * 3.6; // km/h
-  vehicleState.isBoosting = inputState.boost && Math.abs(vehicleState.throttle) > 0.1;
+  vehicleState.isBoosting = boostAvailable && Math.abs(vehicleState.throttle) > 0.1;
 }
 
 /* ============================================================
@@ -729,6 +742,7 @@ function markDiscovered(loc) {
   gameState.discovered[loc.id] = true;
   gameState.discoveredCount = Object.keys(gameState.discovered).length;
   updateDiscoveryCounterUI();
+  updateMissionTrackerUI();
   showDiscoveryToast(loc.name);
   saveGameData();
 
@@ -752,6 +766,9 @@ function haversineDistanceMeters(lat1, lon1, lat2, lon2) {
 
 function applySavedDiscoveries() {
   gameState.discoveredCount = Object.keys(gameState.discovered).length;
+  updateMissionTrackerUI();
+  updateXPUI();
+  updateEnergyUI();
 }
 
 /* ============================================================
@@ -858,9 +875,12 @@ function applyInterfaceVisibility() {
   const topBar = document.getElementById("topBar");
   const compassPanel = document.getElementById("compassPanel");
   const statsPanel = document.getElementById("statsPanel");
+  const topLeftPanel = document.getElementById("topLeftPanel");
+  const bottomLeftPanel = document.getElementById("bottomLeftPanel");
+  const bottomRightPanel = document.getElementById("bottomRightPanel");
   const visible = gameState.settings.interface;
 
-  [topBar, compassPanel, statsPanel].forEach((el) => {
+  [topBar, compassPanel, statsPanel, topLeftPanel, bottomLeftPanel, bottomRightPanel].forEach((el) => {
     if (el) el.style.visibility = visible ? "visible" : "hidden";
   });
 }
@@ -917,6 +937,121 @@ function updateDiscoveryCounterUI() {
   }
 }
 
+/* ============================================================
+   VERSION 2 HUD — XP/Level, Energy, Radar, Mission Tracker
+   ============================================================ */
+
+function updateXPUI() {
+  const levelEl = document.getElementById("explorerLevelValue");
+  const fillEl = document.getElementById("xpBarFill");
+  const currentEl = document.getElementById("xpCurrentValue");
+  const nextEl = document.getElementById("xpNextValue");
+  const missionEl = document.getElementById("currentMissionText");
+
+  if (levelEl) levelEl.textContent = gameState.level;
+  if (currentEl) currentEl.textContent = gameState.xp;
+  if (nextEl) nextEl.textContent = gameState.xpToNextLevel;
+  if (fillEl) {
+    const pct = Cesium.Math.clamp((gameState.xp / gameState.xpToNextLevel) * 100, 0, 100);
+    fillEl.style.width = pct + "%";
+  }
+  if (missionEl) missionEl.textContent = gameState.currentMissionText;
+}
+
+function awardXP(amount) {
+  gameState.xp += amount;
+  while (gameState.xp >= gameState.xpToNextLevel) {
+    gameState.xp -= gameState.xpToNextLevel;
+    gameState.level += 1;
+    gameState.xpToNextLevel = Math.round(gameState.xpToNextLevel * 1.25);
+  }
+  updateXPUI();
+  saveGameData();
+}
+
+// Energy drains/regens each frame based on current activity.
+function updateEnergy(deltaSeconds) {
+  if (vehicleState.isBoosting) {
+    gameState.boostEnergy = Cesium.Math.clamp(
+      gameState.boostEnergy - BOOST_ENERGY_DRAIN_RATE * deltaSeconds, 0, 100
+    );
+  } else {
+    gameState.boostEnergy = Cesium.Math.clamp(
+      gameState.boostEnergy + BOOST_ENERGY_REGEN_RATE * deltaSeconds, 0, 100
+    );
+  }
+
+  const isMoving = Math.abs(vehicleState.throttle) > 0.1;
+  if (isMoving) {
+    gameState.droneEnergy = Cesium.Math.clamp(
+      gameState.droneEnergy - DRONE_ENERGY_DRAIN_RATE * deltaSeconds, 0, 100
+    );
+  } else {
+    gameState.droneEnergy = Cesium.Math.clamp(
+      gameState.droneEnergy + DRONE_ENERGY_REGEN_RATE * deltaSeconds, 0, 100
+    );
+  }
+}
+
+function updateEnergyUI() {
+  const droneFill = document.getElementById("droneEnergyFill");
+  const boostFill = document.getElementById("boostEnergyFill");
+  if (droneFill) droneFill.style.width = gameState.droneEnergy + "%";
+  if (boostFill) boostFill.style.width = gameState.boostEnergy + "%";
+}
+
+// Live mini-radar: plots each location as a blip relative to the player's
+// current heading, clamped to the radar's visible radius.
+const RADAR_RANGE_METERS = 1500;
+
+function updateRadarUI() {
+  const group = document.getElementById("radarBlips");
+  if (!group) return;
+
+  group.innerHTML = "";
+
+  LOCATIONS.forEach((loc) => {
+    const distance = haversineDistanceMeters(
+      vehicleState.latitude, vehicleState.longitude,
+      loc.latitude, loc.longitude
+    );
+
+    // Bearing from player to location, then rotate so "up" = player's heading
+    const bearing = Math.atan2(
+      loc.longitude - vehicleState.longitude,
+      loc.latitude - vehicleState.latitude
+    );
+    const relativeAngle = bearing - vehicleState.heading;
+
+    const clampedDistance = Math.min(distance, RADAR_RANGE_METERS);
+    const radarRadius = 52 * (clampedDistance / RADAR_RANGE_METERS);
+
+    const x = 60 + Math.sin(relativeAngle) * radarRadius;
+    const y = 60 - Math.cos(relativeAngle) * radarRadius;
+
+    const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    dot.setAttribute("cx", x.toFixed(1));
+    dot.setAttribute("cy", y.toFixed(1));
+    dot.setAttribute("r", "4");
+    dot.setAttribute("class", gameState.discovered[loc.id] ? "radar-blip-discovered" : "radar-blip");
+    group.appendChild(dot);
+  });
+}
+
+function updateMissionTrackerUI() {
+  const list = document.getElementById("missionTrackerList");
+  if (!list) return;
+
+  list.innerHTML = "";
+  LOCATIONS.forEach((loc) => {
+    const done = !!gameState.discovered[loc.id];
+    const item = document.createElement("li");
+    item.className = done ? "mission-item-done" : "";
+    item.innerHTML = `<span class="mission-item-icon">${done ? "✅" : "📍"}</span><span>${loc.name}</span>`;
+    list.appendChild(item);
+  });
+}
+
 function updateStatsUI() {
   const speedEl = document.getElementById("speedValue");
   const altEl = document.getElementById("altitudeValue");
@@ -964,7 +1099,10 @@ function saveGameData() {
   try {
     const data = {
       discovered: gameState.discovered,
-      settings: gameState.settings
+      settings: gameState.settings,
+      level: gameState.level,
+      xp: gameState.xp,
+      xpToNextLevel: gameState.xpToNextLevel
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
   } catch (err) {
@@ -980,6 +1118,9 @@ function loadSavedData() {
     const data = JSON.parse(raw);
     if (data.discovered) gameState.discovered = data.discovered;
     if (data.settings) gameState.settings = { ...gameState.settings, ...data.settings };
+    if (typeof data.level === "number") gameState.level = data.level;
+    if (typeof data.xp === "number") gameState.xp = data.xp;
+    if (typeof data.xpToNextLevel === "number") gameState.xpToNextLevel = data.xpToNextLevel;
   } catch (err) {
     console.error("loadSavedData error:", err);
   }
@@ -1009,10 +1150,13 @@ function mainLoop(timestamp) {
 
   try {
     updateVehiclePhysics(deltaSeconds);
+    updateEnergy(deltaSeconds);
     updateCamera(deltaSeconds);
     checkDiscoveries();
     updateStatsUI();
     updateCompassUI();
+    updateEnergyUI();
+    updateRadarUI();
     if (vehicleState.isBoosting) {
       spawnTrailParticle();
     }

@@ -451,4 +451,339 @@ html, body {
   }
 }
 
-/* Show mobile controls only on touch/small-screen devices via JS toggle */
+/* ============================================================
+   PREMIUM HUD — Version 2 layout
+   ============================================================ */
+
+.hud-panel-glass {
+  position: absolute;
+  pointer-events: auto;
+  background: linear-gradient(145deg, rgba(0, 18, 28, 0.72), rgba(0, 10, 18, 0.85));
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(53, 208, 255, 0.28);
+  border-radius: 16px;
+  box-shadow: 0 0 24px rgba(0, 180, 255, 0.12), inset 0 0 20px rgba(53, 208, 255, 0.04);
+  padding: 14px 18px;
+  color: #eaf6ff;
+}
+
+/* ---------- TOP LEFT ---------- */
+#topLeftPanel {
+  top: 16px;
+  left: 16px;
+  width: 260px;
+}
+
+#hudBrand {
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  font-size: 1rem;
+  color: #eaf6ff;
+  text-shadow: 0 0 10px rgba(0, 200, 255, 0.5);
+}
+
+.hud-brand-accent {
+  color: #35d0ff;
+}
+
+#explorerLevelRow {
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: #ffd77a;
+  font-weight: 600;
+}
+
+#xpBarTrack {
+  margin-top: 6px;
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 215, 122, 0.25);
+}
+
+#xpBarFill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #f2b84b, #ffe08a);
+  box-shadow: 0 0 8px rgba(255, 215, 122, 0.7);
+  transition: width 0.5s ease;
+}
+
+#xpValueLabel {
+  margin-top: 4px;
+  font-size: 0.68rem;
+  color: #9fd6ea;
+}
+
+#currentMissionRow {
+  margin-top: 10px;
+  font-size: 0.78rem;
+  border-top: 1px solid rgba(53, 208, 255, 0.18);
+  padding-top: 8px;
+}
+
+.mission-label {
+  color: #7fd8ff;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+/* ---------- TOP RIGHT ---------- */
+#topRightPanel {
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+#topRightPanel #compass {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid rgba(53, 208, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#statsPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 130px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+
+.stat-label {
+  color: #7fd8ff;
+  font-weight: 600;
+}
+
+.stat-unit {
+  color: #6fa;
+  opacity: 0.65;
+  font-size: 0.7rem;
+}
+
+/* ---------- BOTTOM LEFT — RADAR ---------- */
+#bottomLeftPanel {
+  bottom: 16px;
+  left: 16px;
+  width: 148px;
+  text-align: center;
+}
+
+#radarLabel {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7fd8ff;
+  margin-bottom: 6px;
+}
+
+#radarContainer {
+  width: 116px;
+  height: 116px;
+  margin: 0 auto;
+}
+
+#radarSvg {
+  width: 100%;
+  height: 100%;
+}
+
+.radar-ring-outer, .radar-ring-mid, .radar-ring-inner {
+  fill: none;
+  stroke: rgba(53, 208, 255, 0.25);
+  stroke-width: 1;
+}
+
+.radar-crosshair {
+  stroke: rgba(53, 208, 255, 0.15);
+  stroke-width: 1;
+}
+
+.radar-player-dot {
+  fill: #35d0ff;
+  filter: drop-shadow(0 0 4px rgba(53, 208, 255, 0.9));
+}
+
+.radar-blip {
+  fill: #ffd77a;
+  filter: drop-shadow(0 0 4px rgba(255, 215, 122, 0.9));
+}
+
+.radar-blip-discovered {
+  fill: #7fffb0;
+  filter: drop-shadow(0 0 4px rgba(127, 255, 176, 0.9));
+}
+
+/* ---------- BOTTOM CENTER — ENERGY + CONTROLS ---------- */
+#bottomCenterPanel {
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+  text-align: center;
+}
+
+.energy-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.7rem;
+}
+
+.energy-label {
+  width: 90px;
+  text-align: left;
+  color: #9fd6ea;
+  flex-shrink: 0;
+}
+
+.energy-track {
+  flex: 1;
+  height: 9px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(53, 208, 255, 0.2);
+}
+
+.energy-fill {
+  height: 100%;
+  width: 100%;
+  transition: width 0.3s ease;
+}
+
+.drone-energy-fill {
+  background: linear-gradient(90deg, #1c6fe0, #35d0ff);
+  box-shadow: 0 0 8px rgba(53, 208, 255, 0.7);
+}
+
+.boost-energy-fill {
+  background: linear-gradient(90deg, #f2b84b, #ffefc2);
+  box-shadow: 0 0 8px rgba(255, 215, 122, 0.7);
+}
+
+#controlButtons {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+#controlButtons button {
+  pointer-events: auto;
+  background: rgba(0, 20, 30, 0.65);
+  border: 1px solid rgba(53, 208, 255, 0.35);
+  color: #eaf6ff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+#controlButtons button:hover {
+  background: rgba(53, 208, 255, 0.25);
+}
+
+/* ---------- BOTTOM RIGHT — MISSION TRACKER ---------- */
+#bottomRightPanel {
+  bottom: 16px;
+  right: 16px;
+  width: 220px;
+}
+
+#missionTrackerLabel {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7fd8ff;
+  margin-bottom: 8px;
+}
+
+#missionTrackerList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#missionTrackerList li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: #cfeeff;
+}
+
+#missionTrackerList li.mission-item-done {
+  color: #7fffb0;
+}
+
+.mission-item-icon {
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* ---------- MISSION COMPLETE CINEMATIC POPUP ---------- */
+.mission-complete-box {
+  background: radial-gradient(ellipse at center, rgba(0, 40, 30, 0.95), rgba(0, 10, 15, 0.95));
+  border: 1px solid rgba(127, 255, 176, 0.5);
+}
+
+.mission-complete-title {
+  font-size: 0.85rem;
+  letter-spacing: 0.2em;
+  color: #7fffb0;
+  font-weight: 700;
+}
+
+.mission-complete-name {
+  margin-top: 8px;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #ffd77a;
+  text-shadow: 0 0 12px rgba(255, 215, 122, 0.6);
+}
+
+.mission-complete-xp {
+  margin-top: 12px;
+  font-size: 1.1rem;
+  color: #7fffb0;
+  font-weight: 700;
+}
+
+.mission-complete-reward {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: #cfeeff;
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 768px) {
+  #topLeftPanel { width: 190px; padding: 10px 12px; }
+  #topRightPanel { gap: 8px; padding: 10px 12px; }
+  #statsPanel { min-width: 90px; }
+  #bottomLeftPanel { width: 110px; padding: 8px; }
+  #radarContainer { width: 86px; height: 86px; }
+  #bottomCenterPanel { width: 90vw; padding: 10px 12px; }
+  #bottomRightPanel { width: 160px; padding: 10px 12px; }
+  #missionTrackerList li { font-size: 0.68rem; }
+}
