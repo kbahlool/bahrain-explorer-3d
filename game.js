@@ -26,7 +26,7 @@
 // public repo long-term without understanding that browser tokens are
 // visible to anyone who views page source — use a token scoped to only
 // the assets this app needs (world terrain + Bing/OSM imagery).
-const CESIUM_ION_TOKEN = "PASTE_YOUR_CESIUM_TOKEN_HERE";
+const CESIUM_ION_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI0NmM3YWZhYS1hYjk1LTQyMjMtYWFiMy1mNjI1N2E3OTYzNDEiLCJpZCI6NDYxNTc0LCJzdWIiOiJzaGFkb3c5OTk1IiwiaXNzIjoiaHR0cHM6Ly9hcGkuY2VzaXVtLmNvbSIsImF1ZCI6IkJhaHJhaW4gRXhwbG9yZXIgM0QiLCJpYXQiOjE3ODUzMTQyMzF9.Em1MipnUqPCwuK_aJ-z5noovMvb1zhEgGFwe1tp1IVk";
 
 const START_POSITION = {
   longitude: 50.5876,
