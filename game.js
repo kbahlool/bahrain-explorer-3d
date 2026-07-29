@@ -26,7 +26,7 @@
 // public repo long-term without understanding that browser tokens are
 // visible to anyone who views page source — use a token scoped to only
 // the assets this app needs (world terrain + Bing/OSM imagery).
-const CESIUM_ION_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJlMzEzOTEwOC02ZGY5LTQ1YjgtYjMwMS01YmNkMjU5ZjA0ODkiLCJpZCI6NDYxNTc0LCJzdWIiOiJzaGFkb3c5OTk1IiwiaXNzIjoiaHR0cHM6Ly9hcGkuY2VzaXVtLmNvbSIsImF1ZCI6IkJhaHJhaW4gRXhwbG9yZXIgM0QiLCJpYXQiOjE3ODUzMTUzNDl9.hYRAdkPHjo31U8fLSp_E7ZBcJ1jyxMkq5p-WzjaMrV4";
+const CESIUM_ION_TOKEN = "PASTE_YOUR_CESIUM_TOKEN_HERE";
 
 const START_POSITION = {
   longitude: 50.5876,
@@ -149,6 +149,11 @@ function initCesium() {
 
     // Keep Cesium + OSM attribution visible (required, do not remove)
     viewer.cesiumWidget.creditContainer.style.display = "block";
+
+    // Disable default mouse/touch camera controls — they conflict with our
+    // custom third-person follow camera (updateCamera), which fully replaces
+    // them every frame via camera.lookAt().
+    viewer.scene.screenSpaceCameraController.enableInputs = false;
 
     setupTerrainAndBuildings();
     createVehicle();
