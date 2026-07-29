@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>EarthVerse — Chapter One: Bahrain</title>
+
+  <!-- ============================================================
+       EarthVerse — index.html
+       Chapter One: Bahrain
+       Loads CesiumJS from the official CDN (no install required).
+       ============================================================ -->
+
+  <!-- CesiumJS official CDN (CSS) -->
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
+
+  <!-- Local stylesheet -->
+  <link href="style.css" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- ============================================================
+       CINEMATIC LOADING / START SCREEN
+       ============================================================ -->
+  <div id="loadingScreen">
+    <div class="loading-bg"></div>
+
+    <div class="loading-content">
+      <h1 class="ev-logo">EARTH<span class="ev-logo-accent">VERSE</span></h1>
+      <p class="ev-subtitle">Chapter One: Bahrain</p>
+
+      <div id="loadingStatus" class="loading-status">
+        Initializing world engine…
+      </div>
+
+      <div id="tokenError" class="token-error hidden">
+        ⚠ Cesium Ion token is missing or invalid.<br />
+        Open <code>game.js</code> and set your token in
+        <code>CESIUM_ION_TOKEN</code>.<br />
+        Get a free token at
+        <a href="https://ion.cesium.com" target="_blank" rel="noopener">ion.cesium.com</a>.
+      </div>
+
+      <button id="startButton" class="start-button hidden">Start Exploring</button>
+
+      <p class="loading-footnote">
+        Terrain &amp; imagery courtesy of Cesium ion &amp; OpenStreetMap contributors.
+      </p>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       GAME CONTAINER (Cesium canvas lives here)
+       ============================================================ -->
+  <div id="cesiumContainer"></div>
+
+  <!-- ============================================================
+       HUD (heads-up display) — hidden until "Start Exploring"
+       ============================================================ -->
+  <div id="hud" class="hidden">
+
+    <!-- Top bar: discovery progress -->
+    <div id="topBar" class="hud-panel">
+      <div id="discoveryCounter">Locations Discovered: 0/3</div>
+    </div>
+
+    <!-- Compass -->
+    <div id="compassPanel" class="hud-panel">
+      <div id="compass">
+        <div id="compassNeedle"></div>
+        <span class="compass-n">N</span>
+      </div>
+    </div>
+
+    <!-- Speed / Altitude indicators -->
+    <div id="statsPanel" class="hud-panel">
+      <div>Speed: <span id="speedValue">0</span> km/h</div>
+      <div>Altitude: <span id="altitudeValue">0</span> m</div>
+    </div>
+
+    <!-- Buttons: reset / pause / settings / day-night -->
+    <div id="controlButtons" class="hud-panel">
+      <button id="resetButton" title="Reset Position">⟲ Reset</button>
+      <button id="pauseButton" title="Pause">⏸ Pause</button>
+      <button id="dayNightButton" title="Toggle Day/Night">☀ Day</button>
+      <button id="settingsButton" title="Settings">⚙ Settings</button>
+    </div>
+
+    <!-- Discovery notification (toast) -->
+    <div id="discoveryToast" class="discovery-toast hidden">
+      <div class="toast-title">Location Discovered!</div>
+      <div id="toastLocationName" class="toast-name"></div>
+    </div>
+
+    <!-- Pause overlay -->
+    <div id="pauseOverlay" class="overlay hidden">
+      <div class="overlay-box">
+        <h2>Paused</h2>
+        <button id="resumeButton">Resume</button>
+      </div>
+    </div>
+
+    <!-- Settings panel -->
+    <div id="settingsPanel" class="overlay hidden">
+      <div class="overlay-box settings-box">
+        <h2>Settings</h2>
+
+        <label class="settings-row">
+          <span>Sound</span>
+          <input type="checkbox" id="soundToggle" checked />
+        </label>
+
+        <label class="settings-row">
+          <span>Interface</span>
+          <input type="checkbox" id="interfaceToggle" checked />
+        </label>
+
+        <label class="settings-row">
+          <span>Camera Sensitivity</span>
+          <input type="range" id="sensitivitySlider" min="1" max="10" value="5" />
+        </label>
+
+        <label class="settings-row">
+          <span>Movement Speed</span>
+          <input type="range" id="speedSlider" min="1" max="10" value="5" />
+        </label>
+
+        <button id="closeSettingsButton">Close</button>
+      </div>
+    </div>
+
+    <!-- Completion screen -->
+    <div id="completionScreen" class="overlay hidden">
+      <div class="overlay-box">
+        <h2>🎉 Chapter Complete!</h2>
+        <p>You discovered all locations in Manama, Bahrain.</p>
+        <button id="closeCompletionButton">Continue Exploring</button>
+      </div>
+    </div>
+
+    <!-- Mobile touch controls -->
+    <div id="mobileControls" class="hidden">
+      <div id="mobileMoveArea">
+        <button id="btnForward" class="mobile-btn">▲</button>
+        <div class="mobile-row">
+          <button id="btnLeft" class="mobile-btn">◀</button>
+          <button id="btnBackward" class="mobile-btn">▼</button>
+          <button id="btnRight" class="mobile-btn">▶</button>
+        </div>
+      </div>
+      <div id="mobileAltArea">
+        <button id="btnAscend" class="mobile-btn">⤒ E</button>
+        <button id="btnDescend" class="mobile-btn">⤓ Q</button>
+      </div>
+      <button id="btnBoost" class="mobile-btn boost-btn">⚡ Boost</button>
+    </div>
+
+  </div>
+
+  <!-- ============================================================
+       SCRIPTS
+       CesiumJS official CDN (JS) — must load before game.js
+       ============================================================ -->
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <script src="game.js"></script>
+
+</body>
+</html>
