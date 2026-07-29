@@ -137,7 +137,7 @@ window.addEventListener("load", () => {
 });
 
 function initCesium() {
-  if (!CESIUM_ION_TOKEN || CESIUM_ION_TOKEN === "PASTE_YOUR_CESIUM_TOKEN_HERE") {
+  if (!CESIUM_ION_TOKEN || CESIUM_ION_TOKEN === "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI5MDRiODFiYS0zODg5LTQyZjYtYTJmMS1lYWFjYmNkNmQ4ODkiLCJpZCI6NDYxNTc0LCJzdWIiOiJzaGFkb3c5OTk1IiwiaXNzIjoiaHR0cHM6Ly9hcGkuY2VzaXVtLmNvbSIsImF1ZCI6IkJhaHJhaW4gRXhwbG9yZXIgM0QiLCJpYXQiOjE3ODUzMjEwNTR9.qkKDf62PJZhMzks6yG6789bcKpr0E9sjqadp8CBnspw") {
     showTokenError();
     return;
   }
