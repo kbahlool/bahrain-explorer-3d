@@ -26,7 +26,7 @@
 // public repo long-term without understanding that browser tokens are
 // visible to anyone who views page source — use a token scoped to only
 // the assets this app needs (world terrain + Bing/OSM imagery).
-const CESIUM_ION_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkNjVmMjNkMi05ZDI1LTRlNDktOGYwNy01OTVhZGY4MDc0ODciLCJpZCI6NDYxNTc0LCJzdWIiOiJzaGFkb3c5OTk1IiwiaXNzIjoiaHR0cHM6Ly9hcGkuY2VzaXVtLmNvbSIsImF1ZCI6IkJhaHJhaW4gRXhwbG9yZXIgM0QiLCJpYXQiOjE3ODUzMTg3MDR9.0f247I01NFvwZ_ENTFXIN29IWbbhlnWhq9C6EGivpu8";
+const CESIUM_ION_TOKEN = "PASTE_YOUR_CESIUM_TOKEN_HERE";
 
 const START_POSITION = {
   longitude: 50.5876,
@@ -40,6 +40,15 @@ const BASE_MOVE_SPEED = 25;   // meters/second at speed slider = 5
 const BASE_TURN_RATE = 60;    // degrees/second at sensitivity = 5
 const BOOST_MULTIPLIER = 2.2;
 const DISCOVERY_RADIUS = 120; // meters — distance to trigger discovery
+
+// --- Drone feel & animation tuning (Stage 1) ---
+const ACCEL_RATE = 1.8;        // throttle units/sec toward target (higher = snappier)
+const DECEL_RATE = 2.4;        // throttle units/sec back toward 0 (slightly faster than accel)
+const MAX_BANK_DEGREES = 28;   // max roll angle while turning
+const BANK_SMOOTH_RATE = 4.5;  // how quickly bank eases toward target
+const CAMERA_SMOOTH_RATE = 4.0; // how quickly camera heading catches up to the drone
+const HOVER_AMPLITUDE = 0.6;   // meters of idle bob
+const HOVER_SPEED = 1.6;       // idle bob cycles per ~second
 
 const LOCATIONS = [
   {
@@ -80,7 +89,10 @@ const vehicleState = {
   height: START_POSITION.height,
   heading: 0,      // radians
   speed: 0,        // current km/h for display
-  isBoosting: false
+  isBoosting: false,
+  throttle: 0,     // -1..1, eased toward input target — drives smooth accel/decel
+  bankRadians: 0,  // current roll angle, eased toward a turn-based target
+  hoverOffset: 0   // small visual-only vertical bob while idle
 };
 
 const inputState = {
@@ -244,83 +256,134 @@ function vehicleOrientationProperty() {
       Cesium.Cartesian3.fromDegrees(
         vehicleState.longitude,
         vehicleState.latitude,
-        vehicleState.height
+        vehicleState.height + vehicleState.hoverOffset
       ),
-      new Cesium.HeadingPitchRoll(vehicleState.heading, 0, 0)
+      new Cesium.HeadingPitchRoll(vehicleState.heading, 0, vehicleState.bankRadians)
     );
+  }, false);
+}
+
+// Same as localOffsetPosition, but also applies the current hover bob and
+// bank roll so every drone part moves and tilts together as one rigid body.
+function droneOffsetPosition(dx, dy, dz) {
+  return new Cesium.CallbackProperty(() => {
+    const origin = Cesium.Cartesian3.fromDegrees(
+      vehicleState.longitude,
+      vehicleState.latitude,
+      vehicleState.height + vehicleState.hoverOffset
+    );
+    const transform = Cesium.Transforms.headingPitchRollToFixedFrame(
+      origin,
+      new Cesium.HeadingPitchRoll(vehicleState.heading, 0, vehicleState.bankRadians)
+    );
+    const local = new Cesium.Cartesian3(dx * VEHICLE_SCALE, dy * VEHICLE_SCALE, dz * VEHICLE_SCALE);
+    return Cesium.Matrix4.multiplyByPoint(transform, local, new Cesium.Cartesian3());
   }, false);
 }
 
 function createVehicle() {
   try {
     const orientation = vehicleOrientationProperty();
-    const skinColor = Cesium.Color.fromCssColorString("#ffcf9e");
-    const suitColor = Cesium.Color.fromCssColorString("#2a6bd6");
-    const suitDark = Cesium.Color.fromCssColorString("#12356b");
-    const capeColor = Cesium.Color.fromCssColorString("#c81e1e");
+    const hullBlue = Cesium.Color.fromCssColorString("#1c6fe0");
+    const hullBlueDark = Cesium.Color.fromCssColorString("#0c2d5c");
+    const gold = Cesium.Color.fromCssColorString("#f2b84b");
+    const goldBright = Cesium.Color.fromCssColorString("#ffd77a");
 
-    // Torso
+    // Main hull — elongated core body
     viewer.entities.add({
-      position: localOffsetPosition(0, 0, 0),
-      orientation: orientation,
-      box: {
-        dimensions: new Cesium.Cartesian3(1.6, 3.0, 1.4),
-        material: suitColor.withAlpha(0.95),
-        outline: true,
-        outlineColor: Cesium.Color.WHITE.withAlpha(0.6)
-      }
-    });
-
-    // Head
-    viewer.entities.add({
-      position: localOffsetPosition(0, 1.9, 0.5),
+      position: droneOffsetPosition(0, 0, 0),
       orientation: orientation,
       ellipsoid: {
-        radii: new Cesium.Cartesian3(0.6, 0.6, 0.6),
-        material: skinColor
+        radii: new Cesium.Cartesian3(1.1, 2.0, 0.75),
+        material: hullBlue.withAlpha(0.96),
+        outline: true,
+        outlineColor: goldBright.withAlpha(0.8)
       }
     });
 
-    // Arms — stretched forward, classic "flying" pose
-    [-1.15, 1.15].forEach((side) => {
-      viewer.entities.add({
-        position: localOffsetPosition(side, 2.3, 0),
-        orientation: orientation,
-        box: {
-          dimensions: new Cesium.Cartesian3(0.5, 2.1, 0.5),
-          material: suitColor
-        }
-      });
-    });
-
-    // Legs — trailing back and slightly down
-    [-0.5, 0.5].forEach((side) => {
-      viewer.entities.add({
-        position: localOffsetPosition(side, -2.3, -0.3),
-        orientation: orientation,
-        box: {
-          dimensions: new Cesium.Cartesian3(0.6, 2.4, 0.6),
-          material: suitDark
-        }
-      });
-    });
-
-    // Cape — trailing flat panel behind the torso
+    // Golden trim ring near the nose (cockpit accent)
     viewer.entities.add({
-      position: localOffsetPosition(0, -1.6, 0.3),
+      position: droneOffsetPosition(0, 1.0, 0),
       orientation: orientation,
-      box: {
-        dimensions: new Cesium.Cartesian3(1.8, 2.8, 0.12),
-        material: capeColor.withAlpha(0.9)
+      cylinder: {
+        length: 0.25,
+        topRadius: 1.05,
+        bottomRadius: 1.05,
+        material: gold.withAlpha(0.9)
       }
     });
 
-    // Soft glowing aura around the figure (sells the "super-powered flight" feel)
+    // Two side wings, swept back slightly
+    [-1, 1].forEach((side) => {
+      viewer.entities.add({
+        position: droneOffsetPosition(side * 1.9, -0.2, 0),
+        orientation: orientation,
+        box: {
+          dimensions: new Cesium.Cartesian3(2.4, 0.9, 0.12),
+          material: hullBlueDark.withAlpha(0.95),
+          outline: true,
+          outlineColor: goldBright.withAlpha(0.7)
+        }
+      });
+
+      // Golden wingtip accent
+      viewer.entities.add({
+        position: droneOffsetPosition(side * 3.0, -0.5, 0),
+        orientation: orientation,
+        box: {
+          dimensions: new Cesium.Cartesian3(0.3, 0.6, 0.14),
+          material: gold
+        }
+      });
+    });
+
+    // Animated engine glow — two rear thrusters that pulse, brighter under boost
+    const engineStartTime = performance.now();
+    [-0.6, 0.6].forEach((side) => {
+      viewer.entities.add({
+        position: droneOffsetPosition(side, -2.1, 0),
+        point: {
+          pixelSize: new Cesium.CallbackProperty(() => {
+            const t = (performance.now() - engineStartTime) / 260;
+            const pulse = 10 + Math.sin(t) * 3;
+            return vehicleState.isBoosting ? pulse * 1.6 : pulse;
+          }, false),
+          color: new Cesium.CallbackProperty(() => {
+            return vehicleState.isBoosting
+              ? Cesium.Color.fromCssColorString("#ffefc2").withAlpha(0.95)
+              : goldBright.withAlpha(0.85);
+          }, false),
+          outlineColor: Cesium.Color.fromCssColorString("#ff8c00").withAlpha(0.5),
+          outlineWidth: 3
+        }
+      });
+    });
+
+    // Soft ambient glow around the whole hull
     vehicleEntity = viewer.entities.add({
-      position: localOffsetPosition(0, 0, 0),
+      position: droneOffsetPosition(0, 0, 0),
       point: {
-        pixelSize: 46,
-        color: Cesium.Color.CYAN.withAlpha(0.18)
+        pixelSize: 50,
+        color: hullBlue.withAlpha(0.15)
+      }
+    });
+
+    // Ground shadow — clamped to terrain, shrinks/fades with altitude
+    viewer.entities.add({
+      position: new Cesium.CallbackProperty(() => {
+        return Cesium.Cartesian3.fromDegrees(vehicleState.longitude, vehicleState.latitude);
+      }, false),
+      ellipse: {
+        semiMinorAxis: new Cesium.CallbackProperty(() => {
+          const altitudeFactor = Cesium.Math.clamp(vehicleState.height / 200, 0.3, 1.4);
+          return 2.2 / altitudeFactor;
+        }, false),
+        semiMajorAxis: new Cesium.CallbackProperty(() => {
+          const altitudeFactor = Cesium.Math.clamp(vehicleState.height / 200, 0.3, 1.4);
+          return 3.6 / altitudeFactor;
+        }, false),
+        material: Cesium.Color.BLACK.withAlpha(0.35),
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
       }
     });
   } catch (err) {
@@ -482,24 +545,42 @@ function updateVehiclePhysics(deltaSeconds) {
     moveSpeed *= BOOST_MULTIPLIER;
   }
 
+  // --- Smooth acceleration / deceleration ---
+  // Instead of snapping straight to full speed, ease the throttle toward
+  // the input target each frame. Accelerates faster than it decelerates
+  // feels punchy without feeling twitchy.
+  let throttleTarget = 0;
+  if (inputState.forward) throttleTarget += 1;
+  if (inputState.backward) throttleTarget -= 1;
+
+  const throttleRate = Math.abs(throttleTarget) > Math.abs(vehicleState.throttle) ? ACCEL_RATE : DECEL_RATE;
+  const throttleDiff = throttleTarget - vehicleState.throttle;
+  const throttleStep = Cesium.Math.sign(throttleDiff) * Math.min(Math.abs(throttleDiff), throttleRate * deltaSeconds);
+  vehicleState.throttle += throttleStep;
+
   // Turning
   if (inputState.left) vehicleState.heading -= turnRate * deltaSeconds;
   if (inputState.right) vehicleState.heading += turnRate * deltaSeconds;
 
-  // Forward/backward movement along heading
-  let moveDistance = 0;
-  if (inputState.forward) moveDistance += moveSpeed * deltaSeconds;
-  if (inputState.backward) moveDistance -= moveSpeed * deltaSeconds;
+  // --- Smooth banking ---
+  // Roll into turns like a real aircraft/drone instead of staying flat.
+  let bankTarget = 0;
+  if (inputState.left) bankTarget = Cesium.Math.toRadians(-MAX_BANK_DEGREES);
+  if (inputState.right) bankTarget = Cesium.Math.toRadians(MAX_BANK_DEGREES);
 
-  if (moveDistance !== 0) {
+  const bankDiff = bankTarget - vehicleState.bankRadians;
+  vehicleState.bankRadians += bankDiff * Math.min(1, BANK_SMOOTH_RATE * deltaSeconds);
+
+  // Forward/backward movement along heading, driven by eased throttle
+  const moveDistance = moveSpeed * vehicleState.throttle * deltaSeconds;
+
+  if (Math.abs(moveDistance) > 0.0001) {
     const startCartesian = Cesium.Cartesian3.fromDegrees(
       vehicleState.longitude,
       vehicleState.latitude,
       vehicleState.height
     );
 
-    // Move along the local east-north plane based on heading
-    const headingDeg = Cesium.Math.toDegrees(vehicleState.heading);
     const transform = Cesium.Transforms.headingPitchRollToFixedFrame(
       startCartesian,
       new Cesium.HeadingPitchRoll(vehicleState.heading, 0, 0)
@@ -527,10 +608,22 @@ function updateVehiclePhysics(deltaSeconds) {
   vehicleState.height += verticalDelta;
   vehicleState.height = Cesium.Math.clamp(vehicleState.height, MIN_ALTITUDE, MAX_ALTITUDE);
 
-  // Display speed (km/h) — approximate from moveDistance this frame
+  // --- Idle hover bob ---
+  // When nearly stationary and not actively climbing/descending, add a
+  // small sine-wave bob for a "hovering drone" feel. Purely visual — it
+  // never affects vehicleState.height used for altitude/discovery checks.
+  const isNearlyIdle = Math.abs(vehicleState.throttle) < 0.05 && verticalDelta === 0;
+  if (isNearlyIdle) {
+    const t = (performance.now() / 1000) * HOVER_SPEED;
+    vehicleState.hoverOffset = Math.sin(t) * HOVER_AMPLITUDE;
+  } else {
+    vehicleState.hoverOffset += (0 - vehicleState.hoverOffset) * Math.min(1, 6 * deltaSeconds);
+  }
+
+  // Display speed (km/h) — based on eased throttle, not raw input
   const instSpeed = Math.abs(moveDistance) / Math.max(deltaSeconds, 0.0001); // m/s
   vehicleState.speed = instSpeed * 3.6; // km/h
-  vehicleState.isBoosting = inputState.boost && (inputState.forward || inputState.backward);
+  vehicleState.isBoosting = inputState.boost && Math.abs(vehicleState.throttle) > 0.1;
 }
 
 /* ============================================================
@@ -574,14 +667,25 @@ function spawnTrailParticle() {
    8. THIRD-PERSON CAMERA
    ============================================================ */
 
-function updateCamera() {
+let cameraSmoothedHeading = vehicleState.heading;
+
+function updateCamera(deltaSeconds) {
   if (!viewer) return;
   try {
     const target = Cesium.Cartesian3.fromDegrees(
       vehicleState.longitude,
       vehicleState.latitude,
-      vehicleState.height
+      vehicleState.height + vehicleState.hoverOffset
     );
+
+    // Smoothly ease the camera's tracked heading toward the drone's actual
+    // heading rather than snapping instantly — gives a cinematic "catch up"
+    // feel through turns instead of a rigid, robotic follow.
+    const dt = deltaSeconds || 0.016;
+    let headingDiff = vehicleState.heading - cameraSmoothedHeading;
+    // Normalize to the shortest rotation direction (-PI..PI)
+    headingDiff = Cesium.Math.negativePiToPi(headingDiff);
+    cameraSmoothedHeading += headingDiff * Math.min(1, CAMERA_SMOOTH_RATE * dt);
 
     // Offset behind and above the vehicle based on heading
     const followDistance = 24;
@@ -590,7 +694,7 @@ function updateCamera() {
     viewer.camera.lookAt(
       target,
       new Cesium.HeadingPitchRange(
-        vehicleState.heading + Math.PI, // camera behind vehicle
+        cameraSmoothedHeading + Math.PI, // camera behind vehicle
         Cesium.Math.toRadians(-18),
         followDistance + followHeight
       )
@@ -905,7 +1009,7 @@ function mainLoop(timestamp) {
 
   try {
     updateVehiclePhysics(deltaSeconds);
-    updateCamera();
+    updateCamera(deltaSeconds);
     checkDiscoveries();
     updateStatsUI();
     updateCompassUI();
