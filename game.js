@@ -157,6 +157,7 @@ function initCesium() {
 
     setupTerrainAndBuildings();
     createVehicle();
+    createLocationBeacons();
     flyToStart();
     setupKeyboardControls();
     setupMobileControls();
@@ -213,8 +214,9 @@ function flyToStart() {
    5. VEHICLE CREATION
    ============================================================ */
 
-// Scale factor for the whole flying figure (meters)
-const VEHICLE_SCALE = 1.0;
+// Scale factor for the whole flying figure (meters). Bumped up significantly —
+// at typical follow-camera distance a scale of 1.0 was nearly invisible.
+const VEHICLE_SCALE = 6.0;
 
 // Computes a world-space position offset from the vehicle's current
 // location, expressed in the vehicle's own local heading frame.
@@ -324,6 +326,73 @@ function createVehicle() {
   } catch (err) {
     console.error("createVehicle error:", err);
   }
+}
+
+/* ============================================================
+   BEACON MARKERS — glowing pillars of light at each location,
+   visible from a distance so players know where to explore.
+   Turn green + stop pulsing once discovered.
+   ============================================================ */
+
+const beaconEntities = {};
+
+function createLocationBeacons() {
+  LOCATIONS.forEach((loc) => {
+    const basePosition = Cesium.Cartesian3.fromDegrees(loc.longitude, loc.latitude, loc.height);
+    const startTime = performance.now();
+
+    const isDiscovered = () => !!gameState.discovered[loc.id];
+
+    // Pulsing vertical beam
+    const beam = viewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(loc.longitude, loc.latitude, loc.height + 60),
+      cylinder: {
+        length: 120,
+        topRadius: new Cesium.CallbackProperty(() => {
+          const t = (performance.now() - startTime) / 700;
+          return isDiscovered() ? 3 : 3 + Math.sin(t) * 1.5;
+        }, false),
+        bottomRadius: 0.5,
+        material: new Cesium.ColorMaterialProperty(
+          new Cesium.CallbackProperty(() => {
+            return isDiscovered()
+              ? Cesium.Color.LIME.withAlpha(0.35)
+              : Cesium.Color.GOLD.withAlpha(0.45);
+          }, false)
+        ),
+        outline: false
+      }
+    });
+
+    // Glowing marker sphere near ground level + floating label
+    const marker = viewer.entities.add({
+      position: basePosition,
+      point: {
+        pixelSize: new Cesium.CallbackProperty(() => {
+          const t = (performance.now() - startTime) / 350;
+          return isDiscovered() ? 16 : 14 + Math.sin(t) * 4;
+        }, false),
+        color: new Cesium.CallbackProperty(() => {
+          return isDiscovered() ? Cesium.Color.LIME : Cesium.Color.GOLD;
+        }, false),
+        outlineColor: Cesium.Color.WHITE,
+        outlineWidth: 2
+      },
+      label: {
+        text: loc.name,
+        font: "bold 16px sans-serif",
+        fillColor: Cesium.Color.WHITE,
+        outlineColor: Cesium.Color.BLACK,
+        outlineWidth: 3,
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        pixelOffset: new Cesium.Cartesian2(0, -20),
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY
+      }
+    });
+
+    beaconEntities[loc.id] = { beam, marker };
+  });
 }
 
 /* ============================================================
@@ -465,6 +534,43 @@ function updateVehiclePhysics(deltaSeconds) {
 }
 
 /* ============================================================
+   SPEED TRAIL — glowing dots spawned behind the player while
+   boosting, fading out and cleaning themselves up automatically.
+   ============================================================ */
+
+let lastTrailSpawn = 0;
+
+function spawnTrailParticle() {
+  const now = performance.now();
+  if (now - lastTrailSpawn < 60) return; // throttle spawn rate
+  lastTrailSpawn = now;
+
+  const position = Cesium.Cartesian3.fromDegrees(
+    vehicleState.longitude,
+    vehicleState.latitude,
+    vehicleState.height
+  );
+  const spawnTime = now;
+  const lifetimeMs = 600;
+
+  const particle = viewer.entities.add({
+    position: position,
+    point: {
+      pixelSize: 10,
+      color: new Cesium.CallbackProperty(() => {
+        const age = performance.now() - spawnTime;
+        const alpha = Math.max(0, 1 - age / lifetimeMs);
+        return Cesium.Color.ORANGE.withAlpha(alpha * 0.8);
+      }, false)
+    }
+  });
+
+  setTimeout(() => {
+    viewer.entities.remove(particle);
+  }, lifetimeMs);
+}
+
+/* ============================================================
    8. THIRD-PERSON CAMERA
    ============================================================ */
 
@@ -478,8 +584,8 @@ function updateCamera() {
     );
 
     // Offset behind and above the vehicle based on heading
-    const followDistance = 45;
-    const followHeight = 20;
+    const followDistance = 24;
+    const followHeight = 10;
 
     viewer.camera.lookAt(
       target,
@@ -803,6 +909,9 @@ function mainLoop(timestamp) {
     checkDiscoveries();
     updateStatsUI();
     updateCompassUI();
+    if (vehicleState.isBoosting) {
+      spawnTrailParticle();
+    }
   } catch (err) {
     console.error("mainLoop error:", err);
   }
